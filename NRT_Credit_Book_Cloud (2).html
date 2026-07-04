@@ -1,0 +1,1318 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>NRT Company Ltd — Credit Book (Cloud)</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root{
+  --bg:#0e0f11;--surface:#17191d;--surface2:#1f2228;--surface3:#272b33;
+  --border:#2e333d;--border2:#3a4050;
+  --text:#e8eaf0;--text2:#9499a8;--text3:#5c6070;
+  --accent:#f5c842;--accent-dim:rgba(245,200,66,0.12);--accent-dim2:rgba(245,200,66,0.07);
+  --green:#3fcf8e;--green-dim:rgba(63,207,142,0.12);
+  --red:#f0614a;--red-dim:rgba(240,97,74,0.12);
+  --orange:#f5934a;--orange-dim:rgba(245,147,74,0.12);
+  --blue:#5b9cf5;--blue-dim:rgba(91,156,245,0.12);
+  --radius:10px;--radius-sm:6px;
+  --mono:'IBM Plex Mono',monospace;--sans:'IBM Plex Sans',sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--sans);font-size:14px;line-height:1.5}
+::-webkit-scrollbar{width:6px;background:var(--surface)}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
+.app{display:flex;height:100vh;overflow:hidden}
+.sidebar{width:220px;flex-shrink:0;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column}
+.main{flex:1;overflow-y:auto;display:flex;flex-direction:column}
+.sidebar-logo{padding:22px 20px 16px;border-bottom:1px solid var(--border)}
+.logo-mark{font-family:var(--mono);font-size:11px;color:var(--accent);letter-spacing:0.12em;text-transform:uppercase;margin-bottom:4px}
+.logo-name{font-size:17px;font-weight:600;color:var(--text);line-height:1.2}
+.logo-sub{font-size:11px;color:var(--text3);margin-top:2px}
+.cloud-pill{display:inline-flex;align-items:center;gap:5px;margin-top:8px;font-size:10px;padding:3px 9px;border-radius:20px;background:var(--surface2);border:1px solid var(--border)}
+.cdot{width:7px;height:7px;border-radius:50%;display:inline-block}
+.cdot-ok{background:var(--green)}
+.cdot-err{background:var(--red)}
+.cdot-wait{background:var(--accent);animation:blink .9s ease infinite alternate}
+@keyframes blink{from{opacity:.3}to{opacity:1}}
+.sidebar-nav{padding:12px 10px;flex:1}
+.nav-item{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:var(--radius-sm);cursor:pointer;font-size:13.5px;color:var(--text2);transition:all 0.15s;margin-bottom:2px;border:1px solid transparent}
+.nav-item:hover{background:var(--surface2);color:var(--text)}
+.nav-item.active{background:var(--accent-dim);color:var(--accent);border-color:rgba(245,200,66,0.2)}
+.nav-icon{font-size:15px;opacity:0.8}
+.nav-badge{margin-left:auto;background:var(--red-dim);color:var(--red);font-size:11px;padding:2px 7px;border-radius:20px;font-family:var(--mono)}
+.sidebar-stats{padding:12px;border-top:1px solid var(--border);display:grid;gap:8px}
+.mini-stat{background:var(--surface2);border-radius:var(--radius-sm);padding:10px 12px}
+.mini-stat-label{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:0.08em;font-family:var(--mono)}
+.mini-stat-val{font-size:16px;font-weight:600;font-family:var(--mono);margin-top:2px}
+.topbar{padding:14px 28px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px;background:var(--surface);flex-shrink:0}
+.topbar-title{font-size:16px;font-weight:600;flex:1}
+.topbar-date{font-size:12px;color:var(--text3);font-family:var(--mono)}
+.content{padding:24px 28px;flex:1}
+.section{display:none}.section.active{display:block}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:20px 22px;margin-bottom:16px}
+.card-title{font-size:12px;font-weight:500;color:var(--text3);text-transform:uppercase;letter-spacing:0.1em;font-family:var(--mono);margin-bottom:16px}
+.stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px}
+.stat-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:18px 20px}
+.stat-card.accent{border-color:rgba(245,200,66,0.3);background:var(--accent-dim2)}
+.stat-label{font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:0.1em;font-family:var(--mono);margin-bottom:6px}
+.stat-val{font-size:24px;font-weight:600;font-family:var(--mono);line-height:1}
+.stat-val.danger{color:var(--red)}.stat-val.success{color:var(--green)}.stat-val.warn{color:var(--orange)}
+.stat-sub{font-size:11px;color:var(--text3);margin-top:4px}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.form-grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+.form-full{grid-column:span 2}
+.field{display:flex;flex-direction:column;gap:5px}
+label{font-size:12px;color:var(--text2);font-family:var(--mono);letter-spacing:0.05em}
+input,select,textarea{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:9px 12px;color:var(--text);font-family:var(--sans);font-size:14px;outline:none;transition:border-color 0.15s;width:100%}
+input:focus,select:focus,textarea:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(245,200,66,0.08)}
+textarea{resize:vertical;min-height:72px}
+select option{background:var(--surface2)}
+.btn{display:inline-flex;align-items:center;gap:7px;padding:9px 18px;border-radius:var(--radius-sm);border:1px solid var(--border2);background:transparent;color:var(--text);font-family:var(--sans);font-size:13.5px;cursor:pointer;transition:all 0.15s;font-weight:500}
+.btn:hover{background:var(--surface2)}.btn:active{transform:scale(0.98)}
+.btn-primary{background:var(--accent);color:#0e0f11;border-color:var(--accent)}.btn-primary:hover{background:#f7d460}
+.btn-sm{padding:6px 13px;font-size:12.5px}
+.btn-danger{border-color:rgba(240,97,74,0.3);color:var(--red)}.btn-danger:hover{background:var(--red-dim)}
+.btn-success{border-color:rgba(63,207,142,0.3);color:var(--green)}.btn-success:hover{background:var(--green-dim)}
+.btn-group{display:flex;gap:8px;flex-wrap:wrap;margin-top:16px}
+.filters{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;align-items:center}
+.filter-chip{padding:6px 14px;border-radius:20px;border:1px solid var(--border);background:transparent;color:var(--text2);font-size:12.5px;cursor:pointer;font-family:var(--mono);transition:all 0.15s}
+.filter-chip:hover{border-color:var(--border2);color:var(--text)}
+.filter-chip.active{background:var(--accent-dim);color:var(--accent);border-color:rgba(245,200,66,0.3)}
+.search-wrap{flex:1;max-width:280px;position:relative}
+.search-wrap input{padding-left:35px}
+.search-icon{position:absolute;left:11px;top:50%;transform:translateY(-50%);opacity:0.4;font-size:14px}
+.client-row{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px 20px;margin-bottom:10px;transition:border-color 0.15s}
+.client-row:hover{border-color:var(--border2)}
+.client-row.overdue{border-left:3px solid var(--red)}
+.client-row.paid{border-left:3px solid var(--green)}
+.client-row.partial{border-left:3px solid var(--orange)}
+.client-top{display:flex;align-items:center;gap:14px;margin-bottom:12px}
+.avatar{width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:600;font-size:13px;flex-shrink:0;font-family:var(--mono)}
+.av-unpaid{background:var(--blue-dim);color:var(--blue)}
+.av-paid{background:var(--green-dim);color:var(--green)}
+.av-partial{background:var(--orange-dim);color:var(--orange)}
+.client-info{flex:1;min-width:0}
+.client-name{font-size:15px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.client-meta{font-size:12px;color:var(--text3);font-family:var(--mono);margin-top:2px}
+.badge{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:20px;font-size:11.5px;font-family:var(--mono);font-weight:500}
+.badge-red{background:var(--red-dim);color:var(--red)}
+.badge-green{background:var(--green-dim);color:var(--green)}
+.badge-orange{background:var(--orange-dim);color:var(--orange)}
+.badge-blue{background:var(--blue-dim);color:var(--blue)}
+.client-amounts{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:12px}
+.amount-block{background:var(--surface2);border-radius:var(--radius-sm);padding:10px 12px}
+.amount-label{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:0.08em;font-family:var(--mono);margin-bottom:3px}
+.amount-val{font-size:14px;font-weight:600;font-family:var(--mono)}
+.amount-val.green{color:var(--green)}.amount-val.red{color:var(--red)}
+.progress-track{height:5px;background:var(--surface3);border-radius:3px;margin-bottom:10px;overflow:hidden}
+.progress-fill{height:100%;border-radius:3px;background:var(--green);transition:width 0.4s}
+.row-actions{display:flex;gap:8px;flex-wrap:wrap}
+.pay-panel{margin-top:14px;padding-top:14px;border-top:1px solid var(--border);display:none}
+.pay-panel.open{display:block}
+.hist-panel{margin-top:14px;padding-top:14px;border-top:1px solid var(--border);display:none}
+.hist-panel.open{display:block}
+.hist-title{font-size:11px;color:var(--text3);font-family:var(--mono);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:10px}
+.hist-row{display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid var(--border)}
+.hist-row:last-child{border-bottom:none}
+.hist-date{font-size:12px;font-family:var(--mono);color:var(--text3)}
+.hist-amount{font-size:13px;font-weight:600;font-family:var(--mono);color:var(--green)}
+.hist-note{font-size:12px;color:var(--text2);margin-left:8px}
+.empty{text-align:center;padding:48px 20px;color:var(--text3)}
+.empty-icon{font-size:40px;margin-bottom:12px;opacity:0.4}
+.empty-text{font-size:14px;margin-bottom:4px;color:var(--text2)}
+.empty-sub{font-size:12px;color:var(--text3)}
+.report-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}
+.toast-wrap{position:fixed;bottom:24px;right:24px;z-index:999;display:flex;flex-direction:column;gap:8px;pointer-events:none}
+.toast-msg{background:var(--surface3);border:1px solid var(--border2);border-radius:var(--radius);padding:12px 18px;font-size:13px;color:var(--text);min-width:220px;animation:slideIn 0.25s ease;pointer-events:auto}
+.toast-msg.success{border-left:3px solid var(--green);color:var(--green)}
+.toast-msg.error{border-left:3px solid var(--red);color:var(--red)}
+.toast-msg.info{border-left:3px solid var(--accent);color:var(--accent)}
+@keyframes slideIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,0.65);z-index:100;display:none;align-items:center;justify-content:center}
+.modal-bg.open{display:flex}
+.modal{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:28px;width:520px;max-width:95vw;max-height:90vh;overflow-y:auto}
+.modal-title{font-size:16px;font-weight:600;margin-bottom:20px;display:flex;justify-content:space-between;align-items:center}
+.modal-close{background:none;border:none;color:var(--text2);font-size:20px;cursor:pointer;line-height:1;padding:2px}
+.modal-close:hover{color:var(--text)}
+.goods-table{width:100%;border-collapse:collapse;margin-bottom:10px}
+.goods-table th{text-align:left;padding:8px 10px;font-size:11px;font-family:var(--mono);color:var(--text3);text-transform:uppercase;letter-spacing:0.08em;border-bottom:1px solid var(--border2);background:var(--surface2)}
+.goods-table th:last-child,.goods-table th:nth-child(3),.goods-table th:nth-child(4){text-align:right}
+.goods-table td{padding:6px 6px;vertical-align:middle;border-bottom:1px solid var(--border)}
+.goods-table td input{background:var(--surface3);border:1px solid transparent;border-radius:4px;padding:6px 8px;font-size:13px;color:var(--text);width:100%;transition:border-color 0.15s}
+.goods-table td input:focus{border-color:var(--accent);background:var(--surface2)}
+.goods-table .total-cell{text-align:right;font-family:var(--mono);font-size:13px;color:var(--accent);padding-right:6px;white-space:nowrap}
+.goods-table .del-btn{background:none;border:none;color:var(--text3);cursor:pointer;font-size:15px;padding:4px;border-radius:4px;line-height:1;transition:color 0.15s}
+.goods-table .del-btn:hover{color:var(--red)}
+.goods-footer{display:flex;justify-content:space-between;align-items:center;padding:10px 4px 4px}
+.grand-total-txt{font-family:var(--mono);font-size:13px;color:var(--text2)}
+.grand-total-txt span{color:var(--accent);font-size:15px;font-weight:600}
+.spinner-sm{display:inline-block;width:14px;height:14px;border:2px solid rgba(245,200,66,.2);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle;margin-right:6px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.divider{border:none;border-top:1px solid var(--border);margin:20px 0}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.6}}
+.overdue-pulse{animation:pulse 2s infinite}
+@media screen{.print-header,.print-footer{display:none}}
+@media print{
+  .sidebar,.topbar,.btn,.filters,.search-wrap,.row-actions,.pay-panel,.hist-panel,.toast-wrap,.modal-bg,.cloud-pill{display:none!important}
+  .main{overflow:visible}
+  body{background:#fff;color:#000}
+  .client-row{border:1px solid #ccc;break-inside:avoid;margin-bottom:8px}
+  .print-header{display:flex!important}.print-footer{display:flex!important}
+  .content{padding:0 16px}
+}
+.print-header{padding:16px 28px 12px;border-bottom:3px double #111;margin-bottom:18px;display:flex;justify-content:space-between;align-items:flex-start}
+.print-header-left .ph-company{font-size:22px;font-weight:800;letter-spacing:0.05em;color:#000}
+.print-header-left .ph-system{font-size:12px;color:#444;margin-top:3px;text-transform:uppercase;font-weight:600}
+.print-header-right{text-align:right;font-size:11px;color:#555;line-height:1.9}
+.print-footer{margin-top:24px;padding-top:8px;border-top:1px solid #bbb;display:flex;justify-content:space-between;font-size:10px;color:#999}
+
+/* ── LOGIN SCREEN ── */
+#loginScreen{
+  position:fixed;inset:0;background:var(--bg);z-index:9999;
+  display:flex;align-items:center;justify-content:center;padding:20px;
+}
+#loginScreen.hidden{display:none}
+.login-box{
+  background:var(--surface);border:1px solid var(--border2);
+  border-radius:16px;width:100%;max-width:380px;padding:36px 32px;
+}
+.login-logo-ring{
+  display:flex;align-items:center;justify-content:center;
+  width:68px;height:68px;border-radius:18px;margin:0 auto 16px;
+  background:linear-gradient(135deg,var(--accent),#b8871a);
+}
+.login-err{
+  display:none;font-size:12px;padding:9px 12px;border-radius:8px;
+  background:var(--red-dim);color:var(--red);margin-bottom:14px;text-align:center;
+}
+.login-field{margin-bottom:14px}
+.login-field label{display:block;font-size:11px;color:var(--text2);
+  font-family:var(--mono);letter-spacing:0.05em;margin-bottom:5px}
+.login-field input{width:100%;background:var(--surface2);border:1px solid var(--border);
+  border-radius:var(--radius-sm);padding:10px 40px 10px 12px;color:var(--text);
+  font-size:14px;outline:none;font-family:var(--sans);transition:border-color .2s}
+.login-field input:focus{border-color:var(--accent)}
+.pwd-wrap{position:relative}
+.pwd-eye{position:absolute;right:11px;top:50%;transform:translateY(-50%);
+  background:none;border:none;cursor:pointer;color:var(--text3);font-size:14px;padding:2px}
+.login-btn{width:100%;padding:11px;background:var(--accent);color:#0e0f11;
+  border:none;border-radius:var(--radius-sm);font-size:14px;font-weight:600;
+  cursor:pointer;font-family:var(--sans);transition:background .2s;margin-top:4px}
+.login-btn:hover{background:#f7d460}
+.login-attempts{font-size:11px;color:var(--text3);text-align:center;margin-top:12px;font-family:var(--mono)}
+/* Change password modal */
+#changePwdModal{
+  position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:200;
+  display:none;align-items:center;justify-content:center;
+}
+#changePwdModal.open{display:flex}
+
+</style>
+</head>
+<body>
+
+<!-- LOGIN SCREEN -->
+<div id="loginScreen">
+  <div class="login-box">
+    <div style="text-align:center;margin-bottom:28px">
+      <div class="login-logo-ring">
+        <span style="font-size:28px;font-weight:900;color:#000">N</span>
+      </div>
+      <div style="font-size:20px;font-weight:700;color:var(--accent)">NRT Company Ltd</div>
+      <div style="font-size:12px;color:var(--text3);margin-top:4px">Credit Book — Secure Access</div>
+    </div>
+    <div id="loginErr" class="login-err"></div>
+    <div class="login-field">
+      <label>Username</label>
+      <input id="loginUser" type="text" placeholder="Enter username" autocomplete="username"
+        onkeydown="if(event.key==='Enter')document.getElementById('loginPass2').focus()"/>
+    </div>
+    <div class="login-field">
+      <label>Password</label>
+      <div class="pwd-wrap">
+        <input id="loginPass2" type="password" placeholder="Enter password" autocomplete="current-password"
+          onkeydown="if(event.key==='Enter')doLogin()"/>
+        <button class="pwd-eye" onclick="toggleLoginPwd()" id="eyeBtn">👁</button>
+      </div>
+    </div>
+    <button class="login-btn" onclick="doLogin()">🔐 Login</button>
+    <div class="login-attempts" id="attemptsInfo"></div>
+    <div style="text-align:center;font-size:11px;color:var(--text3);margin-top:16px">
+      ☁️ NRT Cloud Edition · Secure &amp; Private
+    </div>
+  </div>
+</div>
+
+<!-- CHANGE PASSWORD MODAL -->
+<div id="changePwdModal">
+  <div style="background:var(--surface);border:1px solid var(--border2);border-radius:16px;
+    padding:28px;width:100%;max-width:400px">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
+      <span style="font-size:16px;font-weight:600;color:var(--accent)">🔑 Change Password</span>
+      <button onclick="document.getElementById('changePwdModal').classList.remove('open')"
+        style="background:none;border:none;cursor:pointer;color:var(--text2);font-size:20px">✕</button>
+    </div>
+    <div style="font-size:12px;padding:8px 12px;background:var(--accent-dim);border-radius:8px;
+      color:var(--accent);margin-bottom:16px;font-family:var(--mono)">
+      Changing credentials for: <strong id="cpUserLabel"></strong>
+    </div>
+    <div class="login-field">
+      <label>Current Password</label>
+      <div class="pwd-wrap">
+        <input id="cp-cur" type="password" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 40px 10px 12px;color:var(--text);font-size:14px;outline:none;font-family:var(--sans)"/>
+        <button class="pwd-eye" onclick="togglePwd2('cp-cur',this)">👁</button>
+      </div>
+    </div>
+    <div class="login-field">
+      <label>New Password (min 6 chars)</label>
+      <div class="pwd-wrap">
+        <input id="cp-new" type="password" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 40px 10px 12px;color:var(--text);font-size:14px;outline:none;font-family:var(--sans)"/>
+        <button class="pwd-eye" onclick="togglePwd2('cp-new',this)">👁</button>
+      </div>
+    </div>
+    <div class="login-field">
+      <label>Confirm New Password</label>
+      <input id="cp-conf" type="password" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 12px;color:var(--text);font-size:14px;outline:none;font-family:var(--sans)"/>
+    </div>
+    <div id="cp-err" style="display:none;font-size:12px;padding:8px 12px;background:var(--red-dim);color:var(--red);border-radius:8px;margin-bottom:12px"></div>
+    <div id="cp-ok" style="display:none;font-size:12px;padding:8px 12px;background:var(--green-dim);color:var(--green);border-radius:8px;margin-bottom:12px"></div>
+    <button onclick="doChangePwd()" style="width:100%;padding:10px;background:var(--accent);color:#0e0f11;
+      border:none;border-radius:var(--radius-sm);font-size:14px;font-weight:600;cursor:pointer">
+      ✅ Update Password
+    </button>
+  </div>
+</div>
+
+<div class="app">
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+  <div class="sidebar-logo">
+    <div class="logo-mark">NRT Company Ltd</div>
+    <div class="logo-name">Credit Book</div>
+    <div class="logo-sub" id="biz-name-display">Cloud Edition</div>
+    <div class="cloud-pill">
+      <span class="cdot cdot-wait" id="cloudDot"></span>
+      <span id="cloudTxt" style="color:var(--text3);font-family:var(--mono)">Connecting…</span>
+    </div>
+  </div>
+  <nav class="sidebar-nav">
+    <div class="nav-item active" onclick="showSection('dashboard',this)"><span class="nav-icon">📊</span> Dashboard</div>
+    <div class="nav-item" onclick="showSection('add',this)"><span class="nav-icon">➕</span> Add Client</div>
+    <div class="nav-item" onclick="showSection('clients',this)"><span class="nav-icon">👥</span> All Clients</div>
+    <div class="nav-item" onclick="showSection('overdue',this)">
+      <span class="nav-icon">⚠️</span> Overdue
+      <span class="nav-badge" id="overdue-badge" style="display:none">0</span>
+    </div>
+    <div class="nav-item" onclick="showSection('reports',this)"><span class="nav-icon">📋</span> Reports</div>
+    <div class="nav-item" onclick="showSection('settings',this)"><span class="nav-icon">⚙️</span> Settings</div>
+  </nav>
+  <div class="sidebar-stats">
+    <div class="mini-stat">
+      <div class="mini-stat-label">Outstanding</div>
+      <div class="mini-stat-val" id="sb-outstanding" style="color:var(--red)">— RWF</div>
+    </div>
+    <div class="mini-stat">
+      <div class="mini-stat-label">Total Clients</div>
+      <div class="mini-stat-val" id="sb-clients" style="color:var(--accent)">—</div>
+    </div>
+  </div>
+
+    <div style="padding:10px;border-top:1px solid var(--border);display:flex;flex-direction:column;gap:7px">
+      <button onclick="openChangePwd()" class="btn btn-sm" style="width:100%;justify-content:center;border-color:rgba(245,200,66,.3);color:var(--accent)">🔑 Change Password</button>
+      <button onclick="doLogout()" class="btn btn-sm btn-danger" style="width:100%;justify-content:center">🚪 Logout</button>
+    </div>
+
+</aside>
+
+<!-- MAIN -->
+<div class="main">
+  <div class="topbar">
+    <div class="topbar-title" id="section-title">Dashboard</div>
+    <div class="topbar-date" id="today-date"></div>
+    <button class="btn btn-sm" onclick="refreshSection()">🔄 Refresh</button>
+    <button class="btn btn-sm" onclick="window.print()">🖨 Print</button>
+  </div>
+
+  <div class="content">
+    <!-- PRINT HEADER -->
+    <div class="print-header">
+      <div class="print-header-left">
+        <div class="ph-company">NRT COMPANY LTD</div>
+        <div class="ph-system">Credit Book — Client Records</div>
+        <div style="font-size:10px;color:#888;margin-top:2px">Wholesale Trading · Kigali, Rwanda</div>
+      </div>
+      <div class="print-header-right">
+        <div id="ph-date" style="font-weight:700;color:#000;font-size:12px"></div>
+        <div>TIN: 111643906</div>
+        <div>+250 788 603 002</div>
+      </div>
+    </div>
+
+    <!-- DASHBOARD -->
+    <div class="section active" id="sec-dashboard">
+      <div id="dash-stats" class="stats-row">
+        <div class="stat-card"><div class="stat-label">Total clients</div><div class="stat-val"><span class="spinner-sm"></span></div></div>
+        <div class="stat-card"><div class="stat-label">Credit given</div><div class="stat-val"><span class="spinner-sm"></span></div></div>
+        <div class="stat-card"><div class="stat-label">Outstanding</div><div class="stat-val danger"><span class="spinner-sm"></span></div></div>
+        <div class="stat-card accent"><div class="stat-label">Overdue</div><div class="stat-val warn"><span class="spinner-sm"></span></div></div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+        <div class="card">
+          <div class="card-title">Recent clients</div>
+          <div id="dash-recent"><span class="spinner-sm"></span> Loading…</div>
+        </div>
+        <div class="card">
+          <div class="card-title">Due within 7 days</div>
+          <div id="dash-due"><span class="spinner-sm"></span> Loading…</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ADD CLIENT -->
+    <div class="section" id="sec-add">
+      <div class="card">
+        <div class="card-title">Client information</div>
+        <div class="form-grid">
+          <div class="field"><label>Full name *</label><input id="f-name" placeholder="Client full name"/></div>
+          <div class="field"><label>Phone</label><input id="f-phone" placeholder="+250 7XX XXX XXX"/></div>
+          <div class="field"><label>ID / Reference</label><input id="f-id" placeholder="National ID or ref"/></div>
+          <div class="field"><label>Location</label><input id="f-location" placeholder="e.g. Kigali, Nyarugenge"/></div>
+          <div class="field"><label>Date goods taken *</label><input id="f-date" type="date"/></div>
+          <div class="field"><label>Expected payment date *</label><input id="f-due" type="date"/></div>
+          <div class="field"><label>EBM receipt #</label><input id="f-ebm" placeholder="Receipt number"/></div>
+          <div class="field"><label>Priority</label>
+            <select id="f-priority">
+              <option value="normal">Normal</option>
+              <option value="high">High Priority</option>
+              <option value="trusted">Trusted Client</option>
+            </select>
+          </div>
+          <div class="field form-full"><label>Notes</label><textarea id="f-notes" placeholder="Any additional notes…" rows="2"></textarea></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">Goods taken on credit</div>
+        <table class="goods-table">
+          <thead><tr>
+            <th style="width:36px">#</th>
+            <th>Item Name</th>
+            <th style="width:90px;text-align:right">Qty</th>
+            <th style="width:130px;text-align:right">Unit Price (RWF)</th>
+            <th style="width:120px;text-align:right">Total (RWF)</th>
+            <th style="width:36px"></th>
+          </tr></thead>
+          <tbody id="goods-tbody"></tbody>
+        </table>
+        <div class="goods-footer">
+          <button class="btn btn-sm" onclick="addGoodsRow()">+ Add item</button>
+          <div class="grand-total-txt">Grand Total: <span id="goods-grand-total">0</span> RWF</div>
+        </div>
+        <div class="divider"></div>
+        <div class="form-grid-3">
+          <div class="field"><label>Total amount (RWF) — auto</label><input id="f-amount" type="number" placeholder="Auto-filled" readonly style="color:var(--accent);font-family:var(--mono)"/></div>
+          <div class="field"><label>Initial deposit (RWF)</label><input id="f-deposit" type="number" placeholder="0 if none"/></div>
+        </div>
+        <div class="btn-group">
+          <button class="btn btn-primary" id="add-btn" onclick="addClient()">☁️ Save to Cloud</button>
+          <button class="btn" onclick="clearForm()">Clear form</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ALL CLIENTS -->
+    <div class="section" id="sec-clients">
+      <div class="filters">
+        <button class="filter-chip active" onclick="setFilter('all',this)">All</button>
+        <button class="filter-chip" onclick="setFilter('unpaid',this)">Unpaid</button>
+        <button class="filter-chip" onclick="setFilter('partial',this)">Partial</button>
+        <button class="filter-chip" onclick="setFilter('paid',this)">Paid</button>
+        <button class="filter-chip" onclick="setFilter('overdue',this)">Overdue</button>
+        <button class="filter-chip" onclick="setFilter('trusted',this)">Trusted</button>
+        <div class="search-wrap">
+          <span class="search-icon">🔍</span>
+          <input id="search-input" placeholder="Search by name, phone…" oninput="renderClients()"/>
+        </div>
+        <span id="client-count" style="font-size:12px;color:var(--text3);font-family:var(--mono);margin-left:4px"></span>
+      </div>
+      <div id="client-list"><div class="empty"><div class="empty-icon">⏳</div><div class="empty-text">Loading from cloud…</div></div></div>
+    </div>
+
+    <!-- OVERDUE -->
+    <div class="section" id="sec-overdue">
+      <div id="overdue-list"><div class="empty"><div class="empty-icon">⏳</div><div class="empty-text">Loading from cloud…</div></div></div>
+    </div>
+
+    <!-- REPORTS -->
+    <div class="section" id="sec-reports">
+      <div id="report-stats" class="stats-row"></div>
+      <div class="report-grid">
+        <div class="card">
+          <div class="card-title">Collection rate</div>
+          <div style="font-size:32px;font-weight:700;font-family:var(--mono);color:var(--accent)" id="collection-rate">—%</div>
+          <div style="font-size:12px;color:var(--text3);margin:8px 0 10px" id="collection-sub"></div>
+          <div class="progress-track" style="height:8px"><div class="progress-fill" id="collection-bar" style="width:0%"></div></div>
+        </div>
+        <div class="card">
+          <div class="card-title">Top debtors (highest owed)</div>
+          <div id="top-debtors"></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">All transactions log</div>
+        <div id="transactions-log"></div>
+      </div>
+    </div>
+
+    <!-- SETTINGS -->
+    <div class="section" id="sec-settings">
+      <div class="card">
+        <div class="card-title">Business settings</div>
+        <div class="form-grid">
+          <div class="field"><label>Business name</label><input id="s-bizname" placeholder="Your business name"/></div>
+          <div class="field"><label>Owner name</label><input id="s-owner" placeholder="Your name"/></div>
+          <div class="field"><label>Phone</label><input id="s-phone" placeholder="Business phone"/></div>
+          <div class="field"><label>Location</label><input id="s-location" placeholder="e.g. Kigali, Rwanda"/></div>
+          <div class="field"><label>Max credit per client (RWF)</label><input id="s-maxcredit" type="number" placeholder="e.g. 500000"/></div>
+          <div class="field"><label>Default payment days</label><input id="s-days" type="number" placeholder="e.g. 14"/></div>
+        </div>
+        <div class="btn-group">
+          <button class="btn btn-primary" onclick="saveSettings()">💾 Save Settings</button>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">Data management</div>
+        <p style="font-size:13px;color:var(--text2);margin-bottom:16px;line-height:1.7">
+          ☁️ All client data is saved to the cloud and shared across all devices automatically.<br>
+          You can still export a CSV backup at any time.
+        </p>
+        <div class="btn-group">
+          <button class="btn btn-success" onclick="exportCSV()">⬇ Export CSV backup</button>
+          <button class="btn btn-danger" onclick="clearAllData()">🗑 Clear all data</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- PRINT FOOTER -->
+    <div class="print-footer">
+      <div style="color:#555;font-weight:600">NRT Company Ltd — Confidential Credit Records</div>
+      <div style="color:#aaa;font-style:italic">ALL RIGHTS RESERVED NRT · +250 788 603 002</div>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- TOAST -->
+<div class="toast-wrap" id="toast-wrap"></div>
+
+<!-- EDIT MODAL -->
+<div class="modal-bg" id="edit-modal">
+  <div class="modal">
+    <div class="modal-title">
+      Edit client
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="form-grid">
+      <div class="field"><label>Full name</label><input id="e-name"/></div>
+      <div class="field"><label>Phone</label><input id="e-phone"/></div>
+      <div class="field"><label>ID / Reference</label><input id="e-id"/></div>
+      <div class="field"><label>Location</label><input id="e-location"/></div>
+      <div class="field form-full"><label>Goods (summary)</label><textarea id="e-goods" rows="2"></textarea></div>
+      <div class="field"><label>Total amount (RWF)</label><input id="e-amount" type="number"/></div>
+      <div class="field"><label>Due date</label><input id="e-due" type="date"/></div>
+      <div class="field"><label>EBM receipt</label><input id="e-ebm"/></div>
+      <div class="field"><label>Priority</label>
+        <select id="e-priority">
+          <option value="normal">Normal</option>
+          <option value="high">High Priority</option>
+          <option value="trusted">Trusted</option>
+        </select>
+      </div>
+      <div class="field form-full"><label>Notes</label><textarea id="e-notes"></textarea></div>
+    </div>
+    <div class="btn-group">
+      <button class="btn btn-primary" onclick="saveEdit()">☁️ Save changes</button>
+      <button class="btn" onclick="closeModal()">Cancel</button>
+    </div>
+  </div>
+</div>
+<script>
+
+// ══════════ AUTH SYSTEM ══════════
+const AUTH_KEY = 'nrt_credit_auth_v1';
+const LOCK_KEY = 'nrt_credit_lock_v1';
+const MAX_ATTEMPTS = 5;
+const LOCK_MINUTES = 15;
+
+// Default credentials — stored in localStorage, changeable
+function getCredentials(){
+  try{
+    const c = localStorage.getItem(AUTH_KEY);
+    return c ? JSON.parse(c) : {username:'admin', password:'nrt2024'};
+  }catch(e){ return {username:'admin', password:'nrt2024'}; }
+}
+function saveCredentials(c){ localStorage.setItem(AUTH_KEY, JSON.stringify(c)); }
+
+// Session state
+function isLoggedIn(){
+  try{
+    const s = sessionStorage.getItem('nrt_credit_session');
+    return s === 'ok';
+  }catch(e){ return false; }
+}
+function setSession(){ sessionStorage.setItem('nrt_credit_session','ok'); }
+function clearSession(){ sessionStorage.removeItem('nrt_credit_session'); }
+
+// Lock state
+function getLockState(){
+  try{
+    const l = localStorage.getItem(LOCK_KEY);
+    return l ? JSON.parse(l) : {attempts:0, lockedUntil:null};
+  }catch(e){ return {attempts:0, lockedUntil:null}; }
+}
+function saveLockState(s){ localStorage.setItem(LOCK_KEY, JSON.stringify(s)); }
+function isLocked(){
+  const l = getLockState();
+  if(!l.lockedUntil) return false;
+  if(new Date() < new Date(l.lockedUntil)) return true;
+  // Lock expired — reset
+  saveLockState({attempts:0, lockedUntil:null});
+  return false;
+}
+function getLockMinsLeft(){
+  const l = getLockState();
+  if(!l.lockedUntil) return 0;
+  return Math.max(0, Math.ceil((new Date(l.lockedUntil)-new Date())/60000));
+}
+
+function toggleLoginPwd(){
+  const inp = document.getElementById('loginPass2');
+  const btn = document.getElementById('eyeBtn');
+  if(inp.type==='password'){inp.type='text';btn.textContent='🙈';}
+  else{inp.type='password';btn.textContent='👁';}
+}
+function togglePwd2(id,btn){
+  const el=document.getElementById(id);
+  if(el.type==='password'){el.type='text';btn.textContent='🙈';}
+  else{el.type='password';btn.textContent='👁';}
+}
+
+function showLoginErr(msg){
+  const e=document.getElementById('loginErr');
+  e.textContent=msg; e.style.display='block';
+}
+
+function doLogin(){
+  const user = document.getElementById('loginUser').value.trim();
+  const pass = document.getElementById('loginPass2').value;
+  const errEl = document.getElementById('loginErr');
+  errEl.style.display='none';
+
+  // Check lock
+  if(isLocked()){
+    showLoginErr('🔒 Too many failed attempts. Try again in '+getLockMinsLeft()+' minute(s).');
+    return;
+  }
+
+  if(!user||!pass){ showLoginErr('Please enter username and password.'); return; }
+
+  const creds = getCredentials();
+  if(user===creds.username && pass===creds.password){
+    // Success — reset attempts
+    saveLockState({attempts:0, lockedUntil:null});
+    setSession();
+    document.getElementById('loginScreen').classList.add('hidden');
+    document.getElementById('loginPass2').value='';
+    document.getElementById('loginUser').value='';
+    document.getElementById('attemptsInfo').textContent='';
+    // Boot the app
+    testConn();
+    renderDashboard();
+  } else {
+    // Failed
+    const lock = getLockState();
+    lock.attempts = (lock.attempts||0)+1;
+    const remaining = MAX_ATTEMPTS - lock.attempts;
+    if(lock.attempts >= MAX_ATTEMPTS){
+      const until = new Date();
+      until.setMinutes(until.getMinutes()+LOCK_MINUTES);
+      lock.lockedUntil = until.toISOString();
+      saveLockState(lock);
+      showLoginErr('🔒 Account locked for '+LOCK_MINUTES+' minutes due to too many failed attempts.');
+      document.getElementById('attemptsInfo').textContent='';
+    } else {
+      saveLockState(lock);
+      showLoginErr('❌ Incorrect username or password.');
+      document.getElementById('attemptsInfo').textContent=remaining+' attempt'+(remaining!==1?'s':'')+' remaining before lockout.';
+    }
+    document.getElementById('loginPass2').value='';
+  }
+}
+
+function doLogout(){
+  clearSession();
+  document.getElementById('loginScreen').classList.remove('hidden');
+  document.getElementById('loginUser').value='';
+  document.getElementById('loginPass2').value='';
+  document.getElementById('loginErr').style.display='none';
+  document.getElementById('attemptsInfo').textContent='';
+}
+
+function openChangePwd(){
+  const creds = getCredentials();
+  document.getElementById('cpUserLabel').textContent = creds.username;
+  document.getElementById('cp-cur').value='';
+  document.getElementById('cp-new').value='';
+  document.getElementById('cp-conf').value='';
+  document.getElementById('cp-err').style.display='none';
+  document.getElementById('cp-ok').style.display='none';
+  document.getElementById('changePwdModal').classList.add('open');
+}
+
+function doChangePwd(){
+  const cur=document.getElementById('cp-cur').value;
+  const nw=document.getElementById('cp-new').value;
+  const conf=document.getElementById('cp-conf').value;
+  const errEl=document.getElementById('cp-err');
+  const okEl=document.getElementById('cp-ok');
+  errEl.style.display='none'; okEl.style.display='none';
+  const creds = getCredentials();
+  if(cur!==creds.password){errEl.textContent='❌ Current password is incorrect.';errEl.style.display='block';return;}
+  if(nw.length<6){errEl.textContent='❌ New password must be at least 6 characters.';errEl.style.display='block';return;}
+  if(nw!==conf){errEl.textContent='❌ Passwords do not match.';errEl.style.display='block';return;}
+  creds.password=nw;
+  saveCredentials(creds);
+  okEl.textContent='✅ Password changed successfully!';okEl.style.display='block';
+  toast('Password updated!');
+  setTimeout(()=>document.getElementById('changePwdModal').classList.remove('open'),1600);
+}
+
+// Check session on load — show login if not authenticated
+if(!isLoggedIn()){
+  document.getElementById('loginScreen').classList.remove('hidden');
+  // Prefill username if saved
+} else {
+  document.getElementById('loginScreen').classList.add('hidden');
+}
+
+
+// ══════════ SUPABASE ══════════
+const SURL='https://razudrsiscyhhmsisegr.supabase.co';
+const SKEY='sb_publishable_KIhtDSmdv9lECzr6mBB93w_HXAAKS5R';
+const db=supabase.createClient(SURL,SKEY);
+
+// ══════════ SETTINGS (localStorage only) ══════════
+const SKEY2='nrt_credit_settings_v1';
+let SETTINGS={bizname:'NRT Company Ltd',owner:'',phone:'+250 788 603 002',location:'Kigali, Rwanda',maxcredit:500000,days:14};
+function loadSettings(){try{const s=localStorage.getItem(SKEY2);if(s)SETTINGS=JSON.parse(s);}catch(e){}}
+function persistSettings(){localStorage.setItem(SKEY2,JSON.stringify(SETTINGS));}
+loadSettings();
+
+// ══════════ CACHE ══════════
+let CLIENTS=[];
+
+// ══════════ CLOUD STATUS ══════════
+async function testConn(){
+  try{
+    const {error}=await db.from('credit_clients').select('id',{count:'exact',head:true});
+    setCloud(!error);
+  }catch(e){setCloud(false);}
+}
+function setCloud(ok){
+  const dot=document.getElementById('cloudDot');
+  const txt=document.getElementById('cloudTxt');
+  if(ok){
+    dot.className='cdot cdot-ok';
+    txt.textContent='Cloud Connected ✓';txt.style.color='var(--green)';
+  }else{
+    dot.className='cdot cdot-err';
+    txt.textContent='Connection Error';txt.style.color='var(--red)';
+  }
+}
+
+// ══════════ HELPERS ══════════
+function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,6);}
+function fmt(n){return Math.round(n).toLocaleString('en-RW');}
+function initials(name){return name.trim().split(' ').map(w=>w[0]||'').slice(0,2).join('').toUpperCase();}
+function today(){return new Date().toISOString().split('T')[0];}
+function daysUntil(d){if(!d)return null;return Math.ceil((new Date(d)-new Date(today()))/86400000);}
+function getPaid(c){return(c.payments||[]).reduce((a,p)=>a+p.amount,0);}
+function getRemaining(c){return Math.max(0,c.total-getPaid(c));}
+function getStatus(c){
+  const paid=getPaid(c);
+  if(paid>=c.total)return'paid';
+  if(paid>0)return'partial';
+  return'unpaid';
+}
+function isOverdue(c){
+  if(getStatus(c)==='paid')return false;
+  if(!c.due)return false;
+  return new Date(c.due)<new Date();
+}
+function getBadge(c){
+  if(getStatus(c)==='paid')return'<span class="badge badge-green">✓ Paid</span>';
+  if(isOverdue(c))return'<span class="badge badge-red overdue-pulse">⚠ Overdue</span>';
+  if(getStatus(c)==='partial')return'<span class="badge badge-orange">◑ Partial</span>';
+  const d=daysUntil(c.due);
+  if(d!==null&&d<=3&&d>=0)return'<span class="badge badge-red">Due in '+d+'d</span>';
+  return'<span class="badge badge-blue">● Unpaid</span>';
+}
+function getAvClass(c){
+  if(getStatus(c)==='paid')return'av-paid';
+  if(getStatus(c)==='partial')return'av-partial';
+  return'av-unpaid';
+}
+function getRowClass(c){
+  if(getStatus(c)==='paid')return'paid';
+  if(isOverdue(c))return'overdue';
+  if(getStatus(c)==='partial')return'partial';
+  return'';
+}
+function esc(s){if(!s)return'';return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+
+// ══════════ TOAST ══════════
+function toast(msg,type='success'){
+  const w=document.getElementById('toast-wrap');
+  const el=document.createElement('div');
+  el.className='toast-msg '+type;
+  el.textContent=msg;
+  w.appendChild(el);
+  setTimeout(()=>el.remove(),3500);
+}
+
+// ══════════ NAVIGATION ══════════
+const titles={dashboard:'Dashboard',add:'Add New Client',clients:'All Clients',overdue:'Overdue Clients',reports:'Reports',settings:'Settings'};
+let currentSection='dashboard';
+function showSection(id,el){
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.getElementById('sec-'+id).classList.add('active');
+  if(el)el.classList.add('active');
+  document.getElementById('section-title').textContent=titles[id]||id;
+  currentSection=id;
+  if(id==='dashboard')renderDashboard();
+  else if(id==='clients')loadAndRenderClients();
+  else if(id==='overdue')loadAndRenderOverdue();
+  else if(id==='reports')renderReports();
+  else if(id==='settings')loadSettingsUI();
+}
+function refreshSection(){showSection(currentSection,null);}
+
+// ══════════ LOAD ALL CLIENTS ══════════
+async function loadClients(){
+  try{
+    const {data,error}=await db.from('credit_clients').select('*').order('created_at',{ascending:false});
+    if(error)throw error;
+    CLIENTS=data||[];
+    return true;
+  }catch(e){
+    toast('❌ Failed to load: '+e.message,'error');
+    return false;
+  }
+}
+
+// ══════════ GOODS TABLE ══════════
+let goodsRows=[];
+let gCounter=0;
+function addGoodsRow(item='',qty='',unitPrice=''){
+  gCounter++;
+  const rid=gCounter;
+  goodsRows.push(rid);
+  const tbody=document.getElementById('goods-tbody');
+  const tr=document.createElement('tr');
+  tr.id='gr-'+rid;
+  tr.innerHTML=`
+    <td style="text-align:center;font-family:var(--mono);font-size:12px;color:var(--text3)">${goodsRows.length}</td>
+    <td><input type="text" id="gi-item-${rid}" placeholder="Item name" value="${item}" oninput="recalcGoods()"/></td>
+    <td><input type="number" id="gi-qty-${rid}" placeholder="0" min="0" value="${qty}" oninput="recalcGoods()" style="text-align:right"/></td>
+    <td><input type="number" id="gi-price-${rid}" placeholder="0" min="0" value="${unitPrice}" oninput="recalcGoods()" style="text-align:right"/></td>
+    <td class="total-cell" id="gi-total-${rid}">0</td>
+    <td style="text-align:center"><button class="del-btn" onclick="removeGoodsRow(${rid})" title="Remove">✕</button></td>`;
+  tbody.appendChild(tr);
+  recalcGoods();
+  if(!item)document.getElementById('gi-item-'+rid)?.focus();
+}
+function removeGoodsRow(rid){
+  document.getElementById('gr-'+rid)?.remove();
+  goodsRows=goodsRows.filter(r=>r!==rid);
+  Array.from(document.getElementById('goods-tbody').rows).forEach((row,i)=>{row.cells[0].textContent=i+1;});
+  recalcGoods();
+}
+function recalcGoods(){
+  let grand=0;
+  goodsRows.forEach(rid=>{
+    const q=parseFloat(document.getElementById('gi-qty-'+rid)?.value)||0;
+    const p=parseFloat(document.getElementById('gi-price-'+rid)?.value)||0;
+    const t=q*p;
+    const el=document.getElementById('gi-total-'+rid);
+    if(el)el.textContent=fmt(t);
+    grand+=t;
+  });
+  document.getElementById('goods-grand-total').textContent=fmt(grand);
+  document.getElementById('f-amount').value=grand>0?Math.round(grand):'';
+}
+function getGoodsItems(){
+  const items=[];
+  goodsRows.forEach(rid=>{
+    const item=document.getElementById('gi-item-'+rid)?.value.trim();
+    const qty=parseFloat(document.getElementById('gi-qty-'+rid)?.value)||0;
+    const price=parseFloat(document.getElementById('gi-price-'+rid)?.value)||0;
+    if(item)items.push({item,qty,unitPrice:price,total:qty*price});
+  });
+  return items;
+}
+function getGoodsSummary(){
+  return getGoodsItems().map(g=>`${g.item} x${g.qty} @ ${fmt(g.unitPrice)} RWF`).join('; ');
+}
+function clearGoodsTable(){
+  document.getElementById('goods-tbody').innerHTML='';
+  goodsRows=[];gCounter=0;
+  recalcGoods();
+  addGoodsRow();addGoodsRow();addGoodsRow();
+}
+function loadGoodsFromItems(items){
+  document.getElementById('goods-tbody').innerHTML='';
+  goodsRows=[];gCounter=0;
+  if(items&&items.length)items.forEach(i=>addGoodsRow(i.item,i.qty,i.unitPrice));
+  else{addGoodsRow();addGoodsRow();addGoodsRow();}
+}
+
+// ══════════ ADD CLIENT ══════════
+function initForm(){
+  document.getElementById('f-date').value=today();
+  const days=parseInt(SETTINGS.days)||14;
+  const due=new Date();due.setDate(due.getDate()+days);
+  document.getElementById('f-due').value=due.toISOString().split('T')[0];
+}
+function clearForm(){
+  ['f-name','f-phone','f-id','f-location','f-notes','f-deposit','f-ebm'].forEach(id=>{
+    const e=document.getElementById(id);if(e)e.value='';
+  });
+  document.getElementById('f-priority').value='normal';
+  clearGoodsTable();initForm();
+}
+
+async function addClient(){
+  const name=document.getElementById('f-name').value.trim();
+  const amount=parseFloat(document.getElementById('f-amount').value);
+  const date=document.getElementById('f-date').value;
+  const due=document.getElementById('f-due').value;
+  if(!name){toast('Please enter client name','error');return;}
+  const items=getGoodsItems();
+  if(!items.length){toast('Please add at least one item','error');return;}
+  if(!amount||isNaN(amount)||amount<=0){toast('Add item quantities and prices first','error');return;}
+  if(!date){toast('Please enter the date goods were taken','error');return;}
+  if(!due){toast('Please enter expected payment date','error');return;}
+  const maxCredit=parseInt(SETTINGS.maxcredit)||0;
+  if(maxCredit>0&&amount>maxCredit){
+    if(!confirm(`Amount (${fmt(amount)} RWF) exceeds max credit limit (${fmt(maxCredit)} RWF). Add anyway?`))return;
+  }
+  const deposit=parseFloat(document.getElementById('f-deposit').value)||0;
+  const payments=[];
+  if(deposit>0){
+    payments.push({id:uid(),amount:Math.round(Math.min(deposit,amount)),date:today(),note:'Initial deposit'});
+  }
+  const client={
+    id:uid(),
+    name,
+    phone:document.getElementById('f-phone').value.trim(),
+    idnum:document.getElementById('f-id').value.trim(),
+    location:document.getElementById('f-location').value.trim(),
+    notes:document.getElementById('f-notes').value.trim(),
+    goods:getGoodsSummary(),
+    goods_items:items,
+    total:Math.round(amount),
+    date,due,
+    ebm:document.getElementById('f-ebm').value.trim(),
+    priority:document.getElementById('f-priority').value,
+    payments,
+    created_at:new Date().toISOString()
+  };
+  const btn=document.getElementById('add-btn');
+  btn.disabled=true;btn.innerHTML='<span class="spinner-sm"></span> Saving…';
+  try{
+    const {error}=await db.from('credit_clients').insert(client);
+    if(error)throw error;
+    CLIENTS.unshift(client);
+    updateBadges();clearForm();
+    toast(`✅ ${name} added to cloud credit book`);
+    showSection('clients',document.querySelectorAll('.nav-item')[2]);
+  }catch(e){toast('❌ '+e.message,'error');}
+  btn.disabled=false;btn.innerHTML='☁️ Save to Cloud';
+}
+
+// ══════════ RENDER CLIENT CARD ══════════
+function renderClientCard(c){
+  const paid=getPaid(c);
+  const remaining=getRemaining(c);
+  const pct=Math.min(100,c.total>0?Math.round((paid/c.total)*100):0);
+  const hist=(c.payments||[]).map(p=>`
+    <div class="hist-row">
+      <div><span class="hist-date">${p.date}</span><span class="hist-note">${esc(p.note||'')}</span></div>
+      <div class="hist-amount">+${fmt(p.amount)} RWF</div>
+    </div>`).join('');
+  const d=daysUntil(c.due);
+  const dueLine=c.due?(()=>{
+    if(getStatus(c)==='paid')return`<span style="color:var(--text3)">Due: ${c.due}</span>`;
+    if(d<0)return`<span style="color:var(--red)">Due: ${c.due} (${Math.abs(d)}d overdue)</span>`;
+    if(d===0)return`<span style="color:var(--red)">Due TODAY</span>`;
+    if(d<=3)return`<span style="color:var(--orange)">Due in ${d} day${d!==1?'s':''}</span>`;
+    return`<span style="color:var(--text3)">Due: ${c.due}</span>`;
+  })():'';
+  const priTag=c.priority==='trusted'?'<span class="badge badge-green" style="font-size:10px">★ Trusted</span>':
+    c.priority==='high'?'<span class="badge badge-red" style="font-size:10px">! Priority</span>':'';
+  const goodsHtml=c.goods_items&&c.goods_items.length?`
+    <div style="margin-bottom:12px;border:1px solid var(--border);border-radius:var(--radius-sm);overflow:hidden">
+      <table style="width:100%;border-collapse:collapse;font-size:12px">
+        <thead><tr style="background:var(--surface2)">
+          <th style="padding:5px 8px;text-align:left;font-family:var(--mono);color:var(--text3);font-size:10px;text-transform:uppercase">No.</th>
+          <th style="padding:5px 8px;text-align:left;font-family:var(--mono);color:var(--text3);font-size:10px;text-transform:uppercase">Item</th>
+          <th style="padding:5px 8px;text-align:right;font-family:var(--mono);color:var(--text3);font-size:10px;text-transform:uppercase">Qty</th>
+          <th style="padding:5px 8px;text-align:right;font-family:var(--mono);color:var(--text3);font-size:10px;text-transform:uppercase">Unit Price</th>
+          <th style="padding:5px 8px;text-align:right;font-family:var(--mono);color:var(--text3);font-size:10px;text-transform:uppercase">Total</th>
+        </tr></thead>
+        <tbody>${c.goods_items.map((g,i)=>`<tr style="border-top:1px solid var(--border)">
+          <td style="padding:5px 8px;font-family:var(--mono);color:var(--text3)">${i+1}</td>
+          <td style="padding:5px 8px">${esc(g.item)}</td>
+          <td style="padding:5px 8px;text-align:right;font-family:var(--mono);color:var(--text2)">${g.qty}</td>
+          <td style="padding:5px 8px;text-align:right;font-family:var(--mono);color:var(--text2)">${fmt(g.unitPrice)}</td>
+          <td style="padding:5px 8px;text-align:right;font-family:var(--mono);color:var(--accent);font-weight:600">${fmt(g.total)}</td>
+        </tr>`).join('')}</tbody>
+      </table>
+    </div>`:c.goods?`<div style="font-size:12px;color:var(--text2);margin-bottom:12px;padding:6px 10px;background:var(--surface2);border-radius:var(--radius-sm)">📦 ${esc(c.goods)}</div>`:'';
+
+  return`<div class="client-row ${getRowClass(c)}" id="cr-${c.id}">
+    <div class="client-top">
+      <div class="avatar ${getAvClass(c)}">${initials(c.name)}</div>
+      <div class="client-info">
+        <div class="client-name">${esc(c.name)} ${priTag}</div>
+        <div class="client-meta">${esc(c.phone||'—')} · ${esc(c.location||'—')} · ${c.date}</div>
+      </div>
+      <div style="text-align:right;display:flex;flex-direction:column;gap:6px;align-items:flex-end">
+        ${getBadge(c)}
+        <div style="font-size:11px;font-family:var(--mono);color:var(--text3)">${dueLine}</div>
+      </div>
+    </div>
+    ${goodsHtml}
+    <div class="client-amounts">
+      <div class="amount-block"><div class="amount-label">Total</div><div class="amount-val">${fmt(c.total)} RWF</div></div>
+      <div class="amount-block"><div class="amount-label">Paid</div><div class="amount-val green">${fmt(paid)} RWF</div></div>
+      <div class="amount-block"><div class="amount-label">Remaining</div><div class="amount-val red">${fmt(remaining)} RWF</div></div>
+    </div>
+    <div class="progress-track"><div class="progress-fill" style="width:${pct}%"></div></div>
+    <div style="font-size:11px;color:var(--text3);font-family:var(--mono);margin-bottom:10px">${pct}% paid${c.ebm?' · EBM: '+esc(c.ebm):''}${c.idnum?' · ID: '+esc(c.idnum):''}</div>
+    <div class="row-actions">
+      ${getStatus(c)!=='paid'?`<button class="btn btn-sm btn-success" onclick="togglePay('${c.id}')">💵 Record payment</button>`:''}
+      ${(c.payments||[]).length?`<button class="btn btn-sm" onclick="toggleHist('${c.id}')">📜 History (${c.payments.length})</button>`:''}
+      <button class="btn btn-sm" onclick="openEdit('${c.id}')">✏️ Edit</button>
+      <button class="btn btn-sm btn-danger" onclick="deleteClient('${c.id}')">🗑</button>
+    </div>
+    <div class="pay-panel" id="pp-${c.id}">
+      <div class="form-grid-3" style="margin-bottom:10px">
+        <div class="field" style="grid-column:span 2"><label>Payment amount (RWF)</label><input type="number" id="pay-amt-${c.id}" placeholder="Amount received" min="1"/></div>
+        <div class="field"><label>Note</label><input id="pay-note-${c.id}" placeholder="Cash / MTN / Airtel"/></div>
+      </div>
+      <button class="btn btn-primary btn-sm" onclick="recordPayment('${c.id}')">✓ Confirm payment</button>
+      <button class="btn btn-sm" onclick="togglePay('${c.id}')" style="margin-left:8px">Cancel</button>
+    </div>
+    <div class="hist-panel" id="hp-${c.id}">
+      <div class="hist-title">Payment history</div>
+      ${hist||'<div style="font-size:12px;color:var(--text3)">No payments recorded yet</div>'}
+    </div>
+  </div>`;
+}
+
+// ══════════ RENDER CLIENTS ══════════
+let currentFilter='all';
+function setFilter(f,el){
+  currentFilter=f;
+  document.querySelectorAll('.filter-chip').forEach(c=>c.classList.remove('active'));
+  el.classList.add('active');
+  renderClients();
+}
+async function loadAndRenderClients(){
+  document.getElementById('client-list').innerHTML='<div class="empty"><div class="empty-icon">⏳</div><div class="empty-text"><span class="spinner-sm"></span> Loading from cloud…</div></div>';
+  await loadClients();
+  renderClients();
+}
+function renderClients(){
+  const q=(document.getElementById('search-input')?.value||'').toLowerCase();
+  let list=CLIENTS.filter(c=>{
+    const mq=!q||c.name.toLowerCase().includes(q)||(c.phone||'').includes(q)||(c.location||'').toLowerCase().includes(q)||(c.goods||'').toLowerCase().includes(q);
+    if(!mq)return false;
+    if(currentFilter==='paid')return getStatus(c)==='paid';
+    if(currentFilter==='unpaid')return getStatus(c)==='unpaid';
+    if(currentFilter==='partial')return getStatus(c)==='partial';
+    if(currentFilter==='overdue')return isOverdue(c);
+    if(currentFilter==='trusted')return c.priority==='trusted';
+    return true;
+  }).sort((a,b)=>{
+    if(isOverdue(a)&&!isOverdue(b))return-1;
+    if(!isOverdue(a)&&isOverdue(b))return 1;
+    return new Date(b.created_at||0)-new Date(a.created_at||0);
+  });
+  document.getElementById('client-count').textContent=list.length+' client'+(list.length!==1?'s':'');
+  const el=document.getElementById('client-list');
+  if(!list.length){
+    el.innerHTML='<div class="empty"><div class="empty-icon">👥</div><div class="empty-text">No clients found</div><div class="empty-sub">Try a different filter or search term</div></div>';
+    return;
+  }
+  el.innerHTML=list.map(renderClientCard).join('');
+}
+async function loadAndRenderOverdue(){
+  document.getElementById('overdue-list').innerHTML='<div class="empty"><div class="empty-icon">⏳</div><div class="empty-text"><span class="spinner-sm"></span> Loading…</div></div>';
+  await loadClients();renderOverdue();
+}
+function renderOverdue(){
+  const list=CLIENTS.filter(isOverdue).sort((a,b)=>new Date(a.due)-new Date(b.due));
+  const el=document.getElementById('overdue-list');
+  if(!list.length){
+    el.innerHTML='<div class="empty"><div class="empty-icon">✅</div><div class="empty-text">No overdue clients!</div><div class="empty-sub">All clients are within their payment deadline.</div></div>';
+    return;
+  }
+  el.innerHTML=list.map(renderClientCard).join('');
+}
+
+// ══════════ ACTIONS ══════════
+function togglePay(id){document.getElementById('pp-'+id)?.classList.toggle('open');}
+function toggleHist(id){document.getElementById('hp-'+id)?.classList.toggle('open');}
+
+async function recordPayment(id){
+  const c=CLIENTS.find(x=>String(x.id)===String(id));if(!c)return;
+  const amt=parseFloat(document.getElementById('pay-amt-'+id)?.value);
+  const note=document.getElementById('pay-note-'+id)?.value.trim();
+  if(!amt||isNaN(amt)||amt<=0){toast('Enter a valid amount','error');return;}
+  const remaining=getRemaining(c);
+  const actual=Math.min(amt,remaining);
+  const payment={id:uid(),amount:Math.round(actual),date:today(),note:note||'Cash'};
+  const updatedPayments=[...(c.payments||[]),payment];
+  try{
+    const {error}=await db.from('credit_clients').update({payments:updatedPayments}).eq('id',id);
+    if(error)throw error;
+    c.payments=updatedPayments;
+    const status=getStatus(c);
+    toast(status==='paid'?`✅ ${c.name} fully paid!`:`Payment of ${fmt(actual)} RWF recorded`);
+    updateBadges();
+    if(currentSection==='clients')renderClients();
+    if(currentSection==='overdue')renderOverdue();
+  }catch(e){toast('❌ '+e.message,'error');}
+}
+
+async function deleteClient(id){
+  const c=CLIENTS.find(x=>String(x.id)===String(id));if(!c)return;
+  if(!confirm(`Remove ${c.name} from the credit book?\n\nThis cannot be undone.`))return;
+  try{
+    const {error}=await db.from('credit_clients').delete().eq('id',id);
+    if(error)throw error;
+    CLIENTS=CLIENTS.filter(x=>x.id!==id);
+    updateBadges();
+    toast(`${c.name} removed`);
+    if(currentSection==='clients')renderClients();
+    if(currentSection==='overdue')renderOverdue();
+  }catch(e){toast('❌ '+e.message,'error');}
+}
+
+// ══════════ EDIT ══════════
+let editingId=null;
+function openEdit(id){
+  const c=CLIENTS.find(x=>String(x.id)===String(id));if(!c)return;
+  editingId=id;
+  document.getElementById('e-name').value=c.name;
+  document.getElementById('e-phone').value=c.phone||'';
+  document.getElementById('e-id').value=c.idnum||'';
+  document.getElementById('e-location').value=c.location||'';
+  document.getElementById('e-goods').value=c.goods||'';
+  document.getElementById('e-amount').value=c.total;
+  document.getElementById('e-due').value=c.due||'';
+  document.getElementById('e-ebm').value=c.ebm||'';
+  document.getElementById('e-priority').value=c.priority||'normal';
+  document.getElementById('e-notes').value=c.notes||'';
+  document.getElementById('edit-modal').classList.add('open');
+}
+function closeModal(){document.getElementById('edit-modal').classList.remove('open');editingId=null;}
+async function saveEdit(){
+  const c=CLIENTS.find(x=>x.id===editingId);if(!c)return;
+  const name=document.getElementById('e-name').value.trim();
+  const amount=parseFloat(document.getElementById('e-amount').value);
+  if(!name||!amount){toast('Name and amount required','error');return;}
+  const updates={
+    name,
+    phone:document.getElementById('e-phone').value.trim(),
+    idnum:document.getElementById('e-id').value.trim(),
+    location:document.getElementById('e-location').value.trim(),
+    goods:document.getElementById('e-goods').value.trim(),
+    total:Math.round(amount),
+    due:document.getElementById('e-due').value,
+    ebm:document.getElementById('e-ebm').value.trim(),
+    priority:document.getElementById('e-priority').value,
+    notes:document.getElementById('e-notes').value.trim()
+  };
+  try{
+    const {error}=await db.from('credit_clients').update(updates).eq('id',editingId);
+    if(error)throw error;
+    Object.assign(c,updates);
+    updateBadges();closeModal();
+    toast(`${name} updated`);
+    if(currentSection==='clients')renderClients();
+    if(currentSection==='overdue')renderOverdue();
+  }catch(e){toast('❌ '+e.message,'error');}
+}
+
+// ══════════ DASHBOARD ══════════
+async function renderDashboard(){
+  document.getElementById('dash-stats').innerHTML=`<div class="stat-card"><div class="stat-label">Loading</div><div class="stat-val"><span class="spinner-sm"></span></div></div>`.repeat(4);
+  document.getElementById('dash-recent').innerHTML='<span class="spinner-sm"></span> Loading…';
+  document.getElementById('dash-due').innerHTML='<span class="spinner-sm"></span> Loading…';
+  await loadClients();
+  const total=CLIENTS.reduce((a,c)=>a+c.total,0);
+  const totalPaid=CLIENTS.reduce((a,c)=>a+getPaid(c),0);
+  const outstanding=total-totalPaid;
+  const overdueCount=CLIENTS.filter(isOverdue).length;
+  const paidCount=CLIENTS.filter(c=>getStatus(c)==='paid').length;
+  document.getElementById('dash-stats').innerHTML=`
+    <div class="stat-card"><div class="stat-label">Total clients</div><div class="stat-val">${CLIENTS.length}</div><div class="stat-sub">${paidCount} fully paid</div></div>
+    <div class="stat-card"><div class="stat-label">Total credit given</div><div class="stat-val">${fmt(total)} <span style="font-size:14px">RWF</span></div></div>
+    <div class="stat-card"><div class="stat-label">Outstanding</div><div class="stat-val danger">${fmt(outstanding)} <span style="font-size:14px">RWF</span></div><div class="stat-sub">${fmt(totalPaid)} collected</div></div>
+    <div class="stat-card accent"><div class="stat-label">Overdue clients</div><div class="stat-val warn">${overdueCount}</div><div class="stat-sub">need follow-up</div></div>`;
+  const recent=CLIENTS.slice(0,5);
+  document.getElementById('dash-recent').innerHTML=recent.length?
+    recent.map(c=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border)">
+      <div><div style="font-size:13px;font-weight:500">${esc(c.name)}</div><div style="font-size:11px;color:var(--text3);font-family:var(--mono)">${c.date}</div></div>
+      <div style="text-align:right"><div style="font-size:13px;font-family:var(--mono);color:${getStatus(c)==='paid'?'var(--green)':'var(--red)'}">${fmt(getRemaining(c))} RWF</div>${getBadge(c)}</div>
+    </div>`).join(''):
+    '<div class="empty" style="padding:20px"><div class="empty-sub">No clients yet</div></div>';
+  const dueSoon=CLIENTS.filter(c=>{
+    if(getStatus(c)==='paid')return false;
+    const d=daysUntil(c.due);
+    return d!==null&&d>=0&&d<=7;
+  }).sort((a,b)=>daysUntil(a.due)-daysUntil(b.due));
+  document.getElementById('dash-due').innerHTML=dueSoon.length?
+    dueSoon.map(c=>{
+      const d=daysUntil(c.due);
+      return`<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border)">
+        <div><div style="font-size:13px;font-weight:500">${esc(c.name)}</div><div style="font-size:11px;font-family:var(--mono);color:${d<=1?'var(--red)':'var(--orange)'}">${d===0?'Due today':'Due in '+d+' day'+(d!==1?'s':'')}</div></div>
+        <div style="font-size:13px;font-family:var(--mono);color:var(--red)">${fmt(getRemaining(c))} RWF</div>
+      </div>`;
+    }).join(''):
+    '<div style="padding:16px;font-size:13px;color:var(--text3)">No payments due in the next 7 days ✓</div>';
+  updateBadges();
+}
+
+// ══════════ REPORTS ══════════
+async function renderReports(){
+  if(!CLIENTS.length)await loadClients();
+  const total=CLIENTS.reduce((a,c)=>a+c.total,0);
+  const totalPaid=CLIENTS.reduce((a,c)=>a+getPaid(c),0);
+  const outstanding=total-totalPaid;
+  const rate=total>0?Math.round((totalPaid/total)*100):0;
+  const overdueAmt=CLIENTS.filter(isOverdue).reduce((a,c)=>a+getRemaining(c),0);
+  document.getElementById('report-stats').innerHTML=`
+    <div class="stat-card"><div class="stat-label">Total lent out</div><div class="stat-val">${fmt(total)} <span style="font-size:14px">RWF</span></div></div>
+    <div class="stat-card"><div class="stat-label">Total collected</div><div class="stat-val success">${fmt(totalPaid)} <span style="font-size:14px">RWF</span></div></div>
+    <div class="stat-card"><div class="stat-label">Still owed</div><div class="stat-val danger">${fmt(outstanding)} <span style="font-size:14px">RWF</span></div></div>
+    <div class="stat-card"><div class="stat-label">Overdue amount</div><div class="stat-val warn">${fmt(overdueAmt)} <span style="font-size:14px">RWF</span></div></div>`;
+  document.getElementById('collection-rate').textContent=rate+'%';
+  document.getElementById('collection-sub').textContent=`${fmt(totalPaid)} of ${fmt(total)} RWF collected from ${CLIENTS.length} clients`;
+  document.getElementById('collection-bar').style.width=rate+'%';
+  const top=CLIENTS.filter(c=>getStatus(c)!=='paid').sort((a,b)=>getRemaining(b)-getRemaining(a)).slice(0,6);
+  document.getElementById('top-debtors').innerHTML=top.length?
+    top.map(c=>`<div style="display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--border);font-size:13px">
+      <span style="color:var(--text2)">${esc(c.name)}</span>
+      <span style="font-family:var(--mono);color:var(--red)">${fmt(getRemaining(c))} RWF</span>
+    </div>`).join(''):
+    '<div style="font-size:13px;color:var(--text3);padding:12px 0">All clients have fully paid ✓</div>';
+  const allTx=CLIENTS.flatMap(c=>(c.payments||[]).map(p=>({...p,client:c.name}))).sort((a,b)=>new Date(b.date)-new Date(a.date));
+  document.getElementById('transactions-log').innerHTML=allTx.length?
+    `<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:13px">
+      <thead><tr style="border-bottom:1px solid var(--border2)">
+        <th style="text-align:left;padding:8px 10px;color:var(--text3);font-family:var(--mono);font-size:11px">DATE</th>
+        <th style="text-align:left;padding:8px 10px;color:var(--text3);font-family:var(--mono);font-size:11px">CLIENT</th>
+        <th style="text-align:left;padding:8px 10px;color:var(--text3);font-family:var(--mono);font-size:11px">NOTE</th>
+        <th style="text-align:right;padding:8px 10px;color:var(--text3);font-family:var(--mono);font-size:11px">AMOUNT</th>
+      </tr></thead>
+      <tbody>${allTx.map(t=>`<tr style="border-bottom:1px solid var(--border)">
+        <td style="padding:8px 10px;font-family:var(--mono);color:var(--text3)">${t.date}</td>
+        <td style="padding:8px 10px;font-weight:500">${esc(t.client)}</td>
+        <td style="padding:8px 10px;color:var(--text2)">${esc(t.note||'Cash')}</td>
+        <td style="padding:8px 10px;text-align:right;font-family:var(--mono);color:var(--green)">+${fmt(t.amount)} RWF</td>
+      </tr>`).join('')}</tbody>
+    </table></div>`:
+    '<div style="font-size:13px;color:var(--text3);padding:12px 0">No payments recorded yet</div>';
+}
+
+// ══════════ SETTINGS UI ══════════
+function loadSettingsUI(){
+  document.getElementById('s-bizname').value=SETTINGS.bizname||'';
+  document.getElementById('s-owner').value=SETTINGS.owner||'';
+  document.getElementById('s-phone').value=SETTINGS.phone||'';
+  document.getElementById('s-location').value=SETTINGS.location||'';
+  document.getElementById('s-maxcredit').value=SETTINGS.maxcredit||'';
+  document.getElementById('s-days').value=SETTINGS.days||14;
+}
+function saveSettings(){
+  SETTINGS={
+    bizname:document.getElementById('s-bizname').value.trim(),
+    owner:document.getElementById('s-owner').value.trim(),
+    phone:document.getElementById('s-phone').value.trim(),
+    location:document.getElementById('s-location').value.trim(),
+    maxcredit:parseInt(document.getElementById('s-maxcredit').value)||0,
+    days:parseInt(document.getElementById('s-days').value)||14
+  };
+  persistSettings();
+  document.getElementById('biz-name-display').textContent=SETTINGS.bizname||'NRT Company Ltd';
+  toast('Settings saved');
+}
+
+// ══════════ EXPORT CSV ══════════
+function exportCSV(){
+  if(!CLIENTS.length){toast('No data to export','error');return;}
+  const rows=[['Name','Phone','Location','Total (RWF)','Paid (RWF)','Remaining (RWF)','Date','Due Date','Status','EBM','Priority','Notes']];
+  CLIENTS.forEach(c=>{
+    rows.push([c.name,c.phone||'',c.location||'',c.total,getPaid(c),getRemaining(c),c.date,c.due||'',getStatus(c),c.ebm||'',c.priority||'normal',c.notes||'']);
+  });
+  const csv=rows.map(r=>r.map(v=>{const s=String(v==null?'':v);return s.includes(',')?'"'+s.replace(/"/g,'""')+'"':s;}).join(',')).join('\n');
+  const blob=new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');a.href=url;a.download='NRT-credit-backup-'+today()+'.csv';
+  a.click();URL.revokeObjectURL(url);
+  toast('CSV exported!');
+}
+
+// ══════════ CLEAR ALL ══════════
+async function clearAllData(){
+  if(!confirm('Delete ALL client data from cloud? This cannot be undone.\n\nExport a CSV backup first!'))return;
+  if(!confirm('Are you absolutely sure? All records will be permanently deleted.'))return;
+  try{
+    const {error}=await db.from('credit_clients').delete().neq('id',0);
+    if(error)throw error;
+    CLIENTS=[];updateBadges();
+    showSection('dashboard',document.querySelector('.nav-item'));
+    toast('All data cleared from cloud');
+  }catch(e){toast('❌ '+e.message,'error');}
+}
+
+// ══════════ BADGES ══════════
+function updateBadges(){
+  const oc=CLIENTS.filter(isOverdue).length;
+  const badge=document.getElementById('overdue-badge');
+  badge.textContent=oc;badge.style.display=oc>0?'':'none';
+  const outstanding=CLIENTS.reduce((a,c)=>a+getRemaining(c),0);
+  document.getElementById('sb-outstanding').textContent=fmt(outstanding)+' RWF';
+  document.getElementById('sb-clients').textContent=CLIENTS.length;
+}
+
+// ══════════ INIT ══════════
+document.getElementById('today-date').textContent=new Date().toLocaleDateString('en-RW',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+document.getElementById('ph-date').textContent=new Date().toLocaleDateString('en-RW',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+document.getElementById('biz-name-display').textContent=SETTINGS.bizname||'NRT Company Ltd';
+setTimeout(()=>{clearGoodsTable();initForm();},0);
+// Auth check handled above — app boots after login
+if(isLoggedIn()){ testConn(); renderDashboard(); }
+
+// Create Supabase table SQL reminder in console
+console.log('=== SUPABASE TABLE NEEDED ===\nRun this SQL in Supabase SQL Editor:\n\ncreate table if not exists credit_clients (\n  id text primary key,\n  name text,\n  phone text,\n  idnum text,\n  location text,\n  notes text,\n  goods text,\n  goods_items jsonb default \'[]\',\n  total numeric default 0,\n  date text,\n  due text,\n  ebm text,\n  priority text default \'normal\',\n  payments jsonb default \'[]\',\n  created_at timestamptz default now()\n);\nalter table credit_clients enable row level security;\ncreate policy if not exists "public_all" on credit_clients for all using (true) with check (true);');
+</script>
+</body>
+</html>
